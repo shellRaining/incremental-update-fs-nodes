@@ -1,9 +1,27 @@
-export function createFile(filename: string, collection: Set<string>) {
-  collection.add(filename);
+export function createFile(
+  filename: string,
+  files: Set<string>,
+  dirs: Set<string>,
+) {
+  files.add(filename);
+
+  // Create parent directories automatically
+  const pathParts = filename.split("/");
+  for (let i = 1; i < pathParts.length - 1; i++) {
+    const dirPath = pathParts.slice(0, i + 1).join("/");
+    dirs.add(dirPath);
+  }
 }
 
-export function createDir(dirname: string, collection: Set<string>) {
-  collection.add(dirname);
+export function createDir(dirname: string, dirs: Set<string>) {
+  dirs.add(dirname);
+
+  // create parent directories automatically
+  const pathparts = dirname.split("/");
+  for (let i = 1; i < pathparts.length; i++) {
+    const dirpath = pathparts.slice(0, i + 1).join("/");
+    dirs.add(dirpath);
+  }
 }
 
 export function createSymlink(symlinkName: string, collection: Set<string>) {
@@ -40,12 +58,20 @@ export function renameFile(
   srcName: string,
   destName: string,
   collection: Set<string>,
+  dirs: Set<string>,
 ) {
   if (!collection.has(srcName)) {
     return;
   }
   collection.delete(srcName);
   collection.add(destName);
+
+  // Create parent directories for destName if dirs set is provided
+  const pathParts = destName.split("/");
+  for (let i = 1; i < pathParts.length - 1; i++) {
+    const dirPath = pathParts.slice(0, i + 1).join("/");
+    dirs.add(dirPath);
+  }
 }
 
 export function renameDir(
