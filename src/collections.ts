@@ -14,6 +14,7 @@ function removeTrailingSlash(path: string): string {
 
 // 通用父目录递归添加函数
 function addParentDirs(path: string, dirs: Set<string>, isFile = false) {
+  // TODO: should compatible with windows
   const pathParts = path.split("/");
   // 如果是文件，最后一个元素是文件名，需要 -1
   const end = isFile ? pathParts.length - 1 : pathParts.length;
@@ -36,22 +37,22 @@ function deleteAllMatching(
 }
 
 export function createFile(
-  filename: string,
+  filePath: string,
   files: Set<string>,
   dirs: Set<string>,
 ) {
-  files.add(filename);
-  addParentDirs(filename, dirs, true);
+  files.add(filePath);
+  addParentDirs(filePath, dirs, true);
 }
 
 export function createDir(
-  dirname: string,
+  dirPath: string,
   _files: Set<string>,
   dirs: Set<string>,
 ) {
-  dirname = removeTrailingSlash(dirname);
-  dirs.add(dirname);
-  addParentDirs(dirname, dirs, false);
+  dirPath = removeTrailingSlash(dirPath);
+  dirs.add(dirPath);
+  addParentDirs(dirPath, dirs, false);
 }
 
 export function createSymlink(symlinkName: string, collection: Set<string>) {
@@ -59,25 +60,25 @@ export function createSymlink(symlinkName: string, collection: Set<string>) {
 }
 
 export function deleteFile(
-  filename: string,
+  filePath: string,
   files: Set<string>,
   _dirs: Set<string>,
 ) {
-  files.delete(filename);
+  files.delete(filePath);
 }
 
 export function deleteDir(
-  dirname: string,
+  dirPath: string,
   files: Set<string>,
   dirs: Set<string>,
 ) {
-  dirname = removeTrailingSlash(dirname);
-  // 删除所有以 dirname 开头的目录和文件
+  dirPath = removeTrailingSlash(dirPath);
+  // 删除所有以 dirPath 开头的目录和文件
   deleteAllMatching(
     dirs,
-    (dir) => dir === dirname || dir.startsWith(dirname + "/"),
+    (dir) => dir === dirPath || dir.startsWith(dirPath + "/"),
   );
-  deleteAllMatching(files, (file) => file.startsWith(dirname + "/"));
+  deleteAllMatching(files, (file) => file.startsWith(dirPath + "/"));
 }
 
 export function deleteSymlink(symlinkName: string, collection: Set<string>) {
@@ -86,26 +87,26 @@ export function deleteSymlink(symlinkName: string, collection: Set<string>) {
 
 // 通用重命名
 function renameInSet(
-  srcName: string,
-  destName: string,
+  src: string,
+  dest: string,
   set: Set<string>,
   matchSub: boolean = false,
 ) {
-  if (!set.has(srcName)) {
+  if (!set.has(src)) {
     return false;
   }
-  if (set.has(destName)) {
+  if (set.has(dest)) {
     return false;
   }
   // 重命名自身
-  set.delete(srcName);
-  set.add(destName);
+  set.delete(src);
+  set.add(dest);
   if (matchSub) {
     // 批量重命名子项
     for (const item of Array.from(set)) {
-      if (item.startsWith(srcName + "/")) {
+      if (item.startsWith(src + "/")) {
         set.delete(item);
-        set.add(destName + item.slice(srcName.length));
+        set.add(dest + item.slice(src.length));
       }
     }
   }
@@ -113,48 +114,48 @@ function renameInSet(
 }
 
 export function renameFile(
-  srcName: string,
-  destName: string,
+  src: string,
+  dest: string,
   files: Set<string>,
   dirs: Set<string>,
 ) {
-  if (!files.has(srcName)) {
+  if (!files.has(src)) {
     return;
   }
-  if (files.has(destName) || dirs.has(destName)) {
+  if (files.has(dest) || dirs.has(dest)) {
     return;
   }
-  files.delete(srcName);
-  createFile(destName, files, dirs);
+  files.delete(src);
+  createFile(dest, files, dirs);
 }
 
 export function renameDir(
-  srcName: string,
-  destName: string,
-  dirs: Set<string>,
+  src: string,
+  dest: string,
   files: Set<string>,
+  dirs: Set<string>,
 ) {
-  if (!dirs.has(srcName)) {
+  if (!dirs.has(src)) {
     return;
   }
-  if (files.has(destName) || dirs.has(destName)) {
+  if (files.has(dest) || dirs.has(dest)) {
     return;
   }
   // 批量重命名目录
-  renameInSet(srcName, destName, dirs, true);
+  renameInSet(src, dest, dirs, true);
   // 批量重命名目录下的文件
   for (const file of Array.from(files)) {
-    if (file.startsWith(srcName + "/")) {
+    if (file.startsWith(src + "/")) {
       files.delete(file);
-      files.add(destName + file.slice(srcName.length));
+      files.add(dest + file.slice(src.length));
     }
   }
 }
 
 export function renameSymlink(
-  srcName: string,
-  destName: string,
+  src: string,
+  dest: string,
   collection: Set<string>,
 ) {
-  renameInSet(srcName, destName, collection);
+  renameInSet(src, dest, collection);
 }

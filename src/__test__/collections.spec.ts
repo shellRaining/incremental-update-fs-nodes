@@ -163,7 +163,7 @@ describe("collections", () => {
 
   describe("renameDir", () => {
     it("should rename a directory and all its subdirectories and files", () => {
-      renameDir("/workspace/test", "/workspace/tests", dirs, files);
+      renameDir("/workspace/test", "/workspace/tests", files, dirs);
       expect(dirs.has("/workspace/test")).toBe(false);
       expect(dirs.has("/workspace/tests")).toBe(true);
       expect(dirs.has("/workspace/tests/subtest")).toBe(true);
@@ -175,8 +175,8 @@ describe("collections", () => {
       renameDir(
         "/workspace/not_exist",
         "/workspace/should_not_exist",
-        dirs,
         files,
+        dirs,
       );
       expect(dirs.has("/workspace/should_not_exist")).toBe(false);
     });
@@ -184,7 +184,7 @@ describe("collections", () => {
     it("should not rename a directory if destination already exists and is a file", () => {
       createFile("/workspace/target", files, dirs);
       createDir("/workspace/source", files, dirs);
-      renameDir("/workspace/source", "/workspace/target", dirs, files);
+      renameDir("/workspace/source", "/workspace/target", files, dirs);
       // Should not overwrite the file
       expect(files.has("/workspace/target")).toBe(true);
       expect(dirs.has("/workspace/source")).toBe(true);
@@ -192,7 +192,7 @@ describe("collections", () => {
 
     it("should handle renaming a directory to an existing directory", () => {
       createDir("/workspace/tests", files, dirs);
-      renameDir("/workspace/test", "/workspace/tests", dirs, files);
+      renameDir("/workspace/test", "/workspace/tests", files, dirs);
       expect(dirs.has("/workspace/test")).toBe(true);
       expect(dirs.has("/workspace/tests")).toBe(true);
       expect(files.has("/workspace/test/test.spec.ts")).toBe(true);
