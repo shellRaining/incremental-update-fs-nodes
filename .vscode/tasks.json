@@ -5,9 +5,7 @@
       "label": "Run Extension (Extension Host)",
       "type": "shell",
       "command": "code",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}"
-      ],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "presentation": {
         "reveal": "always"
       },
