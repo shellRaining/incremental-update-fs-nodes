@@ -1,16 +1,8 @@
 import * as vscode from "vscode";
-import {
-  createDir,
-  createFile,
-  deleteDir,
-  deleteFile,
-  renameDir,
-  renameFile,
-} from "./collections";
 import { Logger } from "./log";
 import { WorkspaceCollection } from "./WorkspaceCollection";
 
-const logger = new Logger("/var/tmp/incUpdateFsNode.log", { overwrite: false });
+const logger = new Logger("/var/tmp/incUpdateFsNode.log", { overwrite: true });
 
 export async function activate(_: vscode.ExtensionContext) {
   const workspaceFolderRoots = vscode.workspace.workspaceFolders?.map(
@@ -20,36 +12,32 @@ export async function activate(_: vscode.ExtensionContext) {
     return;
   }
 
-  const { allFiles: workspaceFiles, allDirs: workspaceFolders } =
-    await WorkspaceCollection.create(workspaceFolderRoots);
-
-  registerWorkspaceEventListeners(workspaceFiles, workspaceFolders);
+  const wsc = await WorkspaceCollection.create(workspaceFolderRoots);
+  logger.log(wsc);
+  registerWorkspaceEventListeners(wsc);
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
-const { File, Directory, SymbolicLink } = vscode.FileType;
-function registerWorkspaceEventListeners(
-  workspaceFiles: Set<string>,
-  workspaceFolders: Set<string>,
-) {
+function registerWorkspaceEventListeners(wsc: WorkspaceCollection) {
+  const { File, Directory, SymbolicLink } = vscode.FileType;
+
   vscode.workspace.onDidCreateFiles((e) => {
     e.files.forEach(async (uri) => {
       const path = uri.fsPath;
       const stat = await vscode.workspace.fs.stat(uri);
       const ft = stat.type;
       if (ft === File) {
-        createFile(path, workspaceFiles, workspaceFolders);
+        wsc.createFile(path);
       } else if (ft === Directory) {
-        createDir(path, workspaceFiles, workspaceFolders);
+        wsc.createDir(path);
       } else if (ft === (File | SymbolicLink)) {
       } else if (ft === (Directory | SymbolicLink)) {
       } else {
         console.error("unknown filetype");
       }
-      logger.log(workspaceFiles);
-      logger.log(workspaceFolders);
+      logger.log(wsc);
     });
   });
   vscode.workspace.onWillDeleteFiles((e) => {
@@ -58,35 +46,33 @@ function registerWorkspaceEventListeners(
       const stat = await vscode.workspace.fs.stat(uri);
       const ft = stat.type;
       if (ft === File) {
-        deleteFile(path, workspaceFiles, workspaceFolders);
+        wsc.deleteFile(path);
       } else if (ft === Directory) {
-        deleteDir(path, workspaceFiles, workspaceFolders);
+        wsc.deleteDir(path);
       } else if (ft === (File | SymbolicLink)) {
       } else if (ft === (Directory | SymbolicLink)) {
       } else {
         console.error("unknown filetype");
       }
-      logger.log(workspaceFiles);
-      logger.log(workspaceFolders);
+      logger.log(wsc);
     });
   });
-  vscode.workspace.onDidRenameFiles((e) => {
+  vscode.workspace.onWillRenameFiles((e) => {
     e.files.forEach(async ({ oldUri, newUri }) => {
       const oldPath = oldUri.fsPath;
       const newPath = newUri.fsPath;
       const stat = await vscode.workspace.fs.stat(oldUri);
       const ft = stat.type;
       if (ft === File) {
-        renameFile(oldPath, newPath, workspaceFiles, workspaceFolders);
+        wsc.renameFile(oldPath, newPath);
       } else if (ft === Directory) {
-        renameDir(oldPath, newPath, workspaceFiles, workspaceFolders);
+        wsc.renameDir(oldPath, newPath);
       } else if (ft === (File | SymbolicLink)) {
       } else if (ft === (Directory | SymbolicLink)) {
       } else {
         console.error("unknown filetype");
       }
-      logger.log(workspaceFiles);
-      logger.log(workspaceFolders);
+      logger.log(wsc);
     });
   });
 }
