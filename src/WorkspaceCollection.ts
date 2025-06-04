@@ -95,6 +95,23 @@ export class WorkspaceCollection {
   readonly allFiles: Set<string>;
   readonly allDirs: Set<string>;
 
+  get relativeFiles(): string[] {
+    return Array.from(this.allFiles).map((file) => this.toRelativePath(file));
+  }
+
+  get relativeDirs(): string[] {
+    return Array.from(this.allDirs).map((dir) => this.toRelativePath(dir));
+  }
+
+  private toRelativePath(absPath: string): string {
+    for (const root of this.roots) {
+      if (absPath.startsWith(root + "/") || absPath === root) {
+        return absPath.slice(root.length).replace(/^\/+/, "");
+      }
+    }
+    return absPath;
+  }
+
   private constructor(
     roots: string[],
     allFiles: Set<string>,

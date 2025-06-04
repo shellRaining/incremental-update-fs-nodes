@@ -54,6 +54,26 @@ describe("WorkspaceCollection", () => {
   });
 });
 
+describe("WorkspaceCollection getters", () => {
+  let ws: WorkspaceCollection;
+  const root = "/root";
+  beforeEach(() => {
+    ws = new (WorkspaceCollection as any)(
+      [root],
+      new Set([`${root}/foo.txt`, `${root}/bar/baz.md`]),
+      new Set([root, `${root}/bar`]),
+    );
+  });
+
+  it("relativeFiles should return relative file paths", () => {
+    expect(ws.relativeFiles.sort()).toEqual(["bar/baz.md", "foo.txt"].sort());
+  });
+
+  it("relativeDirs should return relative dir paths", () => {
+    expect(ws.relativeDirs.sort()).toEqual(["", "bar"].sort());
+  });
+});
+
 describe("WorkspaceCollection (collections migrated)", () => {
   let ws: WorkspaceCollection;
 
