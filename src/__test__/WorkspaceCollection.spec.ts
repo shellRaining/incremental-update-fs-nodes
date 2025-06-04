@@ -4,6 +4,7 @@ import * as path from "path";
 import { WorkspaceCollection } from "../WorkspaceCollection";
 
 const tmpDir = path.resolve(__dirname, ".test-ws");
+const workspaceRoot = "/Users/shellRaining/workspace";
 
 async function setupTestDir() {
   await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
@@ -59,42 +60,44 @@ describe("WorkspaceCollection (collections migrated)", () => {
   beforeEach(() => {
     // 由于 WorkspaceCollection 构造函数是私有的，这里用类型断言绕过
     ws = new (WorkspaceCollection as any)(
-      [],
+      [workspaceRoot],
       new Set([
-        "/workspace/LICENSE",
-        "/workspace/README.md",
-        "/workspace/README_zh.md",
-        "/workspace/src/index.ts",
-        "/workspace/src/utils.ts",
-        "/workspace/test/test.spec.ts",
+        `${workspaceRoot}/LICENSE`,
+        `${workspaceRoot}/README.md`,
+        `${workspaceRoot}/README_zh.md`,
+        `${workspaceRoot}/src/index.ts`,
+        `${workspaceRoot}/src/utils.ts`,
+        `${workspaceRoot}/test/test.spec.ts`,
       ]),
       new Set([
-        "/workspace",
-        "/workspace/src",
-        "/workspace/test",
-        "/workspace/test/subtest",
+        workspaceRoot,
+        `${workspaceRoot}/src`,
+        `${workspaceRoot}/test`,
+        `${workspaceRoot}/test/subtest`,
       ]),
     );
   });
 
   describe("createFile", () => {
     it("should add a file to collection", () => {
-      ws.createFile("/workspace/NEW_FILE.md");
-      expect(ws.allFiles.has("/workspace/NEW_FILE.md")).toBe(true);
+      ws.createFile(`${workspaceRoot}/NEW_FILE.md`);
+      expect(ws.allFiles.has(`${workspaceRoot}/NEW_FILE.md`)).toBe(true);
     });
 
     it("should not add duplicate files", () => {
-      ws.createFile("/workspace/LICENSE");
+      ws.createFile(`${workspaceRoot}/LICENSE`);
       expect(
-        [...ws.allFiles].filter((f) => f === "/workspace/LICENSE").length,
+        [...ws.allFiles].filter((f) => f === `${workspaceRoot}/LICENSE`).length,
       ).toBe(1);
     });
 
     it("should create parent dirs automatically", () => {
-      ws.createFile("/workspace/a/b/c.ts");
-      expect(ws.allFiles.has("/workspace/a/b/c.ts")).toBe(true);
-      expect(ws.allDirs.has("/workspace/a")).toBe(true);
-      expect(ws.allDirs.has("/workspace/a/b")).toBe(true);
+      const originSize = ws.allDirs.size;
+      ws.createFile(`${workspaceRoot}/a/b/c.ts`);
+      expect(ws.allFiles.has(`${workspaceRoot}/a/b/c.ts`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/a`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/a/b`)).toBe(true);
+      expect(ws.allDirs.size).toBe(originSize + 2);
     });
 
     it("should handle creating a file at root", () => {
@@ -106,62 +109,64 @@ describe("WorkspaceCollection (collections migrated)", () => {
 
   describe("createDir", () => {
     it("should add a directory to collection", () => {
-      ws.createDir("/workspace/newdir");
-      expect(ws.allDirs.has("/workspace/newdir")).toBe(true);
+      ws.createDir(`${workspaceRoot}/newdir`);
+      expect(ws.allDirs.has(`${workspaceRoot}/newdir`)).toBe(true);
     });
 
     it("should not add duplicate directories", () => {
-      ws.createDir("/workspace/src");
-      expect([...ws.allDirs].filter((d) => d === "/workspace/src").length).toBe(
-        1,
-      );
+      ws.createDir(`${workspaceRoot}/src`);
+      expect(
+        [...ws.allDirs].filter((d) => d === `${workspaceRoot}/src`).length,
+      ).toBe(1);
     });
 
     it("should create parent dirs automatically", () => {
-      ws.createDir("/workspace/a/b/c");
-      expect(ws.allDirs.has("/workspace/a")).toBe(true);
-      expect(ws.allDirs.has("/workspace/a/b")).toBe(true);
-      expect(ws.allDirs.has("/workspace/a/b/c")).toBe(true);
+      const originSize = ws.allDirs.size;
+      ws.createDir(`${workspaceRoot}/a/b/c`);
+      expect(ws.allDirs.has(`${workspaceRoot}/a`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/a/b`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/a/b/c`)).toBe(true);
+      expect(ws.allDirs.size).toBe(originSize + 3);
     });
 
     it("should handle trailing slash", () => {
-      ws.createDir("/workspace/newdir/");
-      expect(ws.allDirs.has("/workspace/newdir/")).toBe(false);
-      expect(ws.allDirs.has("/workspace/newdir")).toBe(true);
+      ws.createDir(`${workspaceRoot}/newdir/`);
+      expect(ws.allDirs.has(`${workspaceRoot}/newdir/`)).toBe(false);
+      expect(ws.allDirs.has(`${workspaceRoot}/newdir`)).toBe(true);
     });
   });
 
   describe("deleteFile", () => {
     it("should remove a file", () => {
-      ws.deleteFile("/workspace/README.md");
-      expect(ws.allFiles.has("/workspace/README.md")).toBe(false);
+      ws.deleteFile(`${workspaceRoot}/README.md`);
+      expect(ws.allFiles.has(`${workspaceRoot}/README.md`)).toBe(false);
     });
 
     it("should do nothing when file does not exist", () => {
       const oldSize = ws.allFiles.size;
-      ws.deleteFile("/workspace/NOT_EXIST.md");
+      ws.deleteFile(`${workspaceRoot}/NOT_EXIST.md`);
       expect(ws.allFiles.size).toBe(oldSize);
     });
   });
 
   describe("deleteDir", () => {
     it("should remove dir and subdirs/files", () => {
-      ws.deleteDir("/workspace/test");
-      expect(ws.allDirs.has("/workspace/test")).toBe(false);
-      expect(ws.allDirs.has("/workspace/test/subtest")).toBe(false);
-      expect(ws.allFiles.has("/workspace/test/test.spec.ts")).toBe(false);
+      ws.deleteDir(`${workspaceRoot}/test`);
+      expect(ws.allDirs.has(`${workspaceRoot}/test`)).toBe(false);
+      expect(ws.allDirs.has(`${workspaceRoot}/test/subtest`)).toBe(false);
+      expect(ws.allFiles.has(`${workspaceRoot}/test/test.spec.ts`)).toBe(false);
     });
 
     it("should do nothing if dir not exist", () => {
       const oldDirSize = ws.allDirs.size;
       const oldFileSize = ws.allFiles.size;
-      ws.deleteDir("/workspace/not_exist");
+      ws.deleteDir(`${workspaceRoot}/not_exist`);
       expect(ws.allDirs.size).toBe(oldDirSize);
       expect(ws.allFiles.size).toBe(oldFileSize);
     });
 
     it("should handle deleting the root dir", () => {
-      ws.deleteDir("/workspace");
+      ws.deleteDir(workspaceRoot);
       expect(ws.allDirs.size).toBe(0);
       expect(ws.allFiles.size).toBe(0);
     });
@@ -173,44 +178,50 @@ describe("WorkspaceCollection (collections migrated)", () => {
       ws = new (WorkspaceCollection as any)(
         [],
         new Set([
-          "/workspace/LICENSE",
-          "/workspace/README.md",
-          "/workspace/src/index.ts",
+          `${workspaceRoot}/LICENSE`,
+          `${workspaceRoot}/README.md`,
+          `${workspaceRoot}/src/index.ts`,
         ]),
-        new Set(["/workspace", "/workspace/src"]),
+        new Set([workspaceRoot, `${workspaceRoot}/src`]),
       );
     });
 
     it("should rename a file", () => {
-      ws.renameFile("/workspace/README.md", "/workspace/README_NEW.md");
-      expect(ws.allFiles.has("/workspace/README.md")).toBe(false);
-      expect(ws.allFiles.has("/workspace/README_NEW.md")).toBe(true);
+      ws.renameFile(
+        `${workspaceRoot}/README.md`,
+        `${workspaceRoot}/README_NEW.md`,
+      );
+      expect(ws.allFiles.has(`${workspaceRoot}/README.md`)).toBe(false);
+      expect(ws.allFiles.has(`${workspaceRoot}/README_NEW.md`)).toBe(true);
     });
 
     it("should not rename if old file does not exist", () => {
-      ws.renameFile("/workspace/NOT_EXIST.md", "/workspace/NEW.md");
-      expect(ws.allFiles.has("/workspace/NEW.md")).toBe(false);
+      ws.renameFile(`${workspaceRoot}/NOT_EXIST.md`, `${workspaceRoot}/NEW.md`);
+      expect(ws.allFiles.has(`${workspaceRoot}/NEW.md`)).toBe(false);
     });
 
     it("should not overwrite existing file", () => {
-      ws.createFile("/workspace/target.md");
-      ws.renameFile("/workspace/README.md", "/workspace/target.md");
-      expect(ws.allFiles.has("/workspace/README.md")).toBe(true);
-      expect(ws.allFiles.has("/workspace/target.md")).toBe(true);
+      ws.createFile(`${workspaceRoot}/target.md`);
+      ws.renameFile(`${workspaceRoot}/README.md`, `${workspaceRoot}/target.md`);
+      expect(ws.allFiles.has(`${workspaceRoot}/README.md`)).toBe(true);
+      expect(ws.allFiles.has(`${workspaceRoot}/target.md`)).toBe(true);
     });
 
     it("should not overwrite existing dir", () => {
-      ws.createDir("/workspace/target");
-      ws.renameFile("/workspace/README.md", "/workspace/target");
-      expect(ws.allFiles.has("/workspace/README.md")).toBe(true);
-      expect(ws.allDirs.has("/workspace/target")).toBe(true);
+      ws.createDir(`${workspaceRoot}/target`);
+      ws.renameFile(`${workspaceRoot}/README.md`, `${workspaceRoot}/target`);
+      expect(ws.allFiles.has(`${workspaceRoot}/README.md`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/target`)).toBe(true);
     });
 
     it("should create parent dirs automatically", () => {
-      ws.renameFile("/workspace/README.md", "/workspace/docs/README.md");
-      expect(ws.allFiles.has("/workspace/README.md")).toBe(false);
-      expect(ws.allFiles.has("/workspace/docs/README.md")).toBe(true);
-      expect(ws.allDirs.has("/workspace/docs")).toBe(true);
+      ws.renameFile(
+        `${workspaceRoot}/README.md`,
+        `${workspaceRoot}/docs/README.md`,
+      );
+      expect(ws.allFiles.has(`${workspaceRoot}/README.md`)).toBe(false);
+      expect(ws.allFiles.has(`${workspaceRoot}/docs/README.md`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/docs`)).toBe(true);
     });
   });
 
@@ -218,45 +229,50 @@ describe("WorkspaceCollection (collections migrated)", () => {
     beforeEach(() => {
       ws = new (WorkspaceCollection as any)(
         [],
-        new Set(["/workspace/test/test.spec.ts"]),
+        new Set([`${workspaceRoot}/test/test.spec.ts`]),
         new Set([
-          "/workspace",
-          "/workspace/src",
-          "/workspace/test",
-          "/workspace/test/subtest",
+          workspaceRoot,
+          `${workspaceRoot}/src`,
+          `${workspaceRoot}/test`,
+          `${workspaceRoot}/test/subtest`,
         ]),
       );
     });
 
     it("should rename a directory with subdirs/files", () => {
-      ws.renameDir("/workspace/test", "/workspace/tests");
-      expect(ws.allDirs.has("/workspace/test")).toBe(false);
-      expect(ws.allDirs.has("/workspace/tests")).toBe(true);
-      expect(ws.allDirs.has("/workspace/tests/subtest")).toBe(true);
-      expect(ws.allFiles.has("/workspace/test/test.spec.ts")).toBe(false);
-      expect(ws.allFiles.has("/workspace/tests/test.spec.ts")).toBe(true);
+      ws.renameDir(`${workspaceRoot}/test`, `${workspaceRoot}/tests`);
+      expect(ws.allDirs.has(`${workspaceRoot}/test`)).toBe(false);
+      expect(ws.allDirs.has(`${workspaceRoot}/tests`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/tests/subtest`)).toBe(true);
+      expect(ws.allFiles.has(`${workspaceRoot}/test/test.spec.ts`)).toBe(false);
+      expect(ws.allFiles.has(`${workspaceRoot}/tests/test.spec.ts`)).toBe(true);
     });
 
     it("should do nothing if old dir not exist", () => {
-      ws.renameDir("/workspace/not_exist", "/workspace/should_not_exist");
-      expect(ws.allDirs.has("/workspace/should_not_exist")).toBe(false);
+      ws.renameDir(
+        `${workspaceRoot}/not_exist`,
+        `${workspaceRoot}/should_not_exist`,
+      );
+      expect(ws.allDirs.has(`${workspaceRoot}/should_not_exist`)).toBe(false);
     });
 
     it("should not overwrite file with a dir rename", () => {
-      ws.createFile("/workspace/target");
-      ws.createDir("/workspace/source");
-      ws.renameDir("/workspace/source", "/workspace/target");
-      expect(ws.allFiles.has("/workspace/target")).toBe(true);
-      expect(ws.allDirs.has("/workspace/source")).toBe(true);
+      ws.createFile(`${workspaceRoot}/target`);
+      ws.createDir(`${workspaceRoot}/source`);
+      ws.renameDir(`${workspaceRoot}/source`, `${workspaceRoot}/target`);
+      expect(ws.allFiles.has(`${workspaceRoot}/target`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/source`)).toBe(true);
     });
 
     it("should not rename to an existing dir", () => {
-      ws.createDir("/workspace/tests");
-      ws.renameDir("/workspace/test", "/workspace/tests");
-      expect(ws.allDirs.has("/workspace/test")).toBe(true);
-      expect(ws.allDirs.has("/workspace/tests")).toBe(true);
-      expect(ws.allFiles.has("/workspace/test/test.spec.ts")).toBe(true);
-      expect(ws.allFiles.has("/workspace/tests/test.spec.ts")).toBe(false);
+      ws.createDir(`${workspaceRoot}/tests`);
+      ws.renameDir(`${workspaceRoot}/test`, `${workspaceRoot}/tests`);
+      expect(ws.allDirs.has(`${workspaceRoot}/test`)).toBe(true);
+      expect(ws.allDirs.has(`${workspaceRoot}/tests`)).toBe(true);
+      expect(ws.allFiles.has(`${workspaceRoot}/test/test.spec.ts`)).toBe(true);
+      expect(ws.allFiles.has(`${workspaceRoot}/tests/test.spec.ts`)).toBe(
+        false,
+      );
     });
   });
 });

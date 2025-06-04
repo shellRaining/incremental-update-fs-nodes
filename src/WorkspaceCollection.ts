@@ -135,17 +135,17 @@ export class WorkspaceCollection {
 
   createFile(filePath: string) {
     this.allFiles.add(filePath);
-    addParentDirs(filePath, this.allDirs, {
-      isFile: true,
-    });
+    const baseDirs = this.roots.filter((root) => filePath.startsWith(root));
+    const baseDir = baseDirs[0] ?? "";
+    addParentDirs(filePath, this.allDirs, { isFile: true, baseDir });
   }
 
   createDir(dirPath: string) {
     dirPath = removeTrailingSlash(dirPath);
     this.allDirs.add(dirPath);
-    addParentDirs(dirPath, this.allDirs, {
-      isFile: false,
-    });
+    const baseDirs = this.roots.filter((root) => dirPath.startsWith(root));
+    const baseDir = baseDirs[0] ?? "";
+    addParentDirs(dirPath, this.allDirs, { isFile: false, baseDir });
   }
 
   createSymlink(symlinkName: string, collection: Set<string>) {
