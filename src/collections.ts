@@ -12,15 +12,40 @@ function removeTrailingSlash(path: string): string {
   return path;
 }
 
-// 通用父目录递归添加函数
-function addParentDirs(path: string, dirs: Set<string>, isFile = false) {
-  // TODO: should compatible with windows
-  const pathParts = path.split("/");
-  // 如果是文件，最后一个元素是文件名，需要 -1
-  const end = isFile ? pathParts.length - 1 : pathParts.length;
-  for (let i = 1; i < end; i++) {
-    const dirPath = pathParts.slice(0, i + 1).join("/");
-    dirs.add(dirPath);
+interface AddParentDirsOptions {
+  isFile?: boolean;
+  baseDir?: string;
+}
+
+function addParentDirs(
+  path: string,
+  dirs: Set<string>,
+  opts: AddParentDirsOptions = {},
+) {
+  const { isFile = false, baseDir } = opts;
+
+  // 统一分隔符并去除结尾斜杠
+  const normalize = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
+  const inputPath = normalize(path);
+  const base = baseDir ? normalize(baseDir) : undefined;
+
+  // 如果是文件，去掉最后一段（文件名）
+  let dir = isFile
+    ? inputPath.substring(0, inputPath.lastIndexOf("/"))
+    : inputPath;
+
+  // 循环向上加目录，直到 baseDir 或根目录
+  while (dir && (!base || dir.length >= base.length)) {
+    dirs.add(dir);
+    if (base && dir === base) {
+      break;
+    }
+
+    const lastSlash = dir.lastIndexOf("/");
+    if (lastSlash === -1) {
+      break;
+    }
+    dir = dir.substring(0, lastSlash);
   }
 }
 
@@ -42,7 +67,9 @@ export function createFile(
   dirs: Set<string>,
 ) {
   files.add(filePath);
-  addParentDirs(filePath, dirs, true);
+  addParentDirs(filePath, dirs, {
+    isFile: true,
+  });
 }
 
 export function createDir(
@@ -52,7 +79,9 @@ export function createDir(
 ) {
   dirPath = removeTrailingSlash(dirPath);
   dirs.add(dirPath);
-  addParentDirs(dirPath, dirs, false);
+  addParentDirs(dirPath, dirs, {
+    isFile: false,
+  });
 }
 
 export function createSymlink(symlinkName: string, collection: Set<string>) {
